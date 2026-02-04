@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h1>Status Kaffeemaschine</h1>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3>Bohnen-Vorrat</h3>
+            <p>Geschätzte verbleibende Tassen: <strong>{{ rest }}</strong></p>
+            
+            {% if warnung %}
+            <div class="alert alert-danger">
+                <strong>ACHTUNG:</strong> Bitte Kaffeebohnen nachkaufen!
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                Alles okay. Vorrat reicht noch.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+

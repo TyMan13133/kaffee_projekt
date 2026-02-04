@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card mb-4 border-info">
+    <div class="card-header bg-info text-white">
+        ☕ Kaffeemaschinen Status
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+
+            <div class="col-md-6 border-end">
+                <h5 class="card-title">Bohnen Vorrat</h5>
+                <h3>{{ stats.bestand_gramm }}g</h3>
+                <p class="text-muted">
+                    Reicht bei aktuellem Konsum (Ø {{ stats.tassen_pro_tag }} Tassen/Tag) noch ca.
+                    <strong>{{ stats.tage_bis_leer }} Tage</strong>.
+                </p>
+                {% if stats.tage_bis_leer < 3 %}
+                    <div class="alert alert-danger p-1">⚠ Bitte nachkaufen!</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6">
+                <h5 class="card-title">Nächster Einkäufer?</h5>
+                <h3 class="text-primary">{{ stats.empfehlung_name }}</h3>
+                <p>hat aktuell das geringste Guthaben:</p>
+                <span class="badge bg-success fs-6">{{ "%.2f"|format(stats.empfehlung_saldo) }} €</span>
+                <p class="small text-muted mt-2">
+                    (Vorschlag basierend auf Trust-System)
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h1>Hallo, {{ current_user.name }}!</h1>
+        <div class="card bg-light mb-3">
+            <div class="card-body text-center">
+                <h3>Dein Guthaben</h3>
+                <h1 class="{{ 'text-success' if saldo >= 0 else 'text-danger' }}">{{ "%.2f"|format(saldo) }} €</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h4>Deine letzten Aktivitäten</h4>
+        <ul class="list-group">
+            {% for t in transaktionen %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ t.beschreibung }}
+                <span class="badge {{ 'bg-success' if t.betrag > 0 else 'bg-secondary' }}">
+                    {{ "%.2f"|format(t.betrag) }} €
+                </span>
+                <small class="text-muted">{{ t.zeitstempel }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

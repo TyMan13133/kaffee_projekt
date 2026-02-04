@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h1>Letzte Buchungen (History)</h1>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Zeit</th>
+                    <th>Name</th>
+                    <th>Aktion / Produkt</th>
+                    <th>Betrag</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for buchung in buchungen %}
+                <tr>
+                    <td>{{ buchung['zeitstempel'] }}</td>
+                    
+                    <td><strong>{{ buchung['name'] }}</strong></td>
+                    
+                    <td>
+                        {{ buchung['beschreibung'] }}
+                        <span class="badge rounded-pill bg-secondary" style="font-size: 0.7em;">
+                            {{ buchung['typ'] }}
+                        </span>
+                    </td>
+                    
+                    <td class="{{ 'text-danger' if buchung['betrag'] < 0 else 'text-success' }}">
+                        <strong>{{ "%.2f"|format(buchung['betrag']) }} €</strong>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

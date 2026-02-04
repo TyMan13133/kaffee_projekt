@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Admin Bereich</h1>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-header">Offene Schulden</div>
+            <div class="card-body">
+                <h3 class="card-title">{{ "%.2f"|format(finanzen.summe_schulden) }} €</h3>
+                <p class="card-text">Geld, das User dem System schulden.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Vorhandenes Guthaben</div>
+            <div class="card-body">
+                <h3 class="card-title">{{ "%.2f"|format(finanzen.summe_guthaben) }} €</h3>
+                <p class="card-text">Vorausbezahltes Geld der User.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-dark bg-light mb-3">
+            <div class="card-header">System Bilanz</div>
+            <div class="card-body">
+                <h3 class="card-title">{{ "%.2f"|format(finanzen.bilanz) }} €</h3>
+                <p class="card-text">Differenz (Sollte ca. 0 sein).</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card p-3 h-100">
+            <h4>💰 Geld Verwalten</h4>
+            <p class="text-muted small">Positiv = Einzahlung<br>Negativ = Auszahlung</p>
+            <form action="{{ url_for('admin_action') }}" method="POST">
+                <input type="hidden" name="aktion" value="geld_ein">
+                <select name="user_id" class="form-select mb-2">
+                    {% for u in users %} <option value="{{ u.id }}">{{ u.name }}</option> {% endfor %}
+                </select>
+                <input type="number" step="0.10" name="betrag" placeholder="Betrag € (z.B. 10 oder -5)" class="form-control mb-2" required>
+                <button class="btn btn-success w-100">Buchen</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 h-100">
+            <h4>☕ Bohnen Lieferung</h4>
+            <p class="text-muted small">Wird dem Nutzer gutgeschrieben.</p>
+            <form action="{{ url_for('admin_action') }}" method="POST">
+                <input type="hidden" name="aktion" value="bohnen">
+                <select name="user_id" class="form-select mb-2">
+                    {% for u in users %} <option value="{{ u.id }}">{{ u.name }}</option> {% endfor %}
+                </select>
+                <div class="row">
+                    <div class="col"><input type="number" name="menge" placeholder="Gramm" class="form-control mb-2" required></div>
+                    <div class="col"><input type="number" step="0.01" name="preis" placeholder="Preis €" class="form-control mb-2" required></div>
+                </div>
+                <select name="sorte" class="form-select mb-2">
+                    <option value="Koffein">Mit Koffein</option>
+                    <option value="Entkoffeiniert">Entkoffeiniert</option>
+                </select>
+                <button class="btn btn-primary w-100">Bohnen erfassen</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 h-100 border-info">
+            <h4>🧹 Zubehör & Sonstiges</h4>
+            <p class="text-muted small">Erstattung für Filter, Reiniger etc.</p>
+            <form action="{{ url_for('admin_action') }}" method="POST">
+                <input type="hidden" name="aktion" value="sonstiges">
+                <select name="user_id" class="form-select mb-2">
+                    {% for u in users %} <option value="{{ u.id }}">{{ u.name }}</option> {% endfor %}
+                </select>
+                <select name="kategorie" class="form-select mb-2">
+                    <option value="Kaffeefilter">Kaffeefilter</option>
+                    <option value="Entkalker">Entkalker</option>
+                    <option value="Reinigungsmittel">Reinigungsmittel</option>
+                    <option value="Milch/Zucker">Milch / Zucker</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                </select>
+                <input type="number" step="0.01" name="betrag" placeholder="Kosten €" class="form-control mb-2" required>
+                <button class="btn btn-info text-white w-100">Erstatten</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5">
+    <h4>Benutzerverwaltung</h4>
+    
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Name</th>
+                <th>Saldo</th>
+                <th>RFID</th>
+                <th class="text-end">Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>
+                    <strong>{{ u.name }}</strong>
+                    {% if u.is_admin %} <span class="badge bg-warning text-dark">Admin</span> {% endif %}
+                </td>
+                
+                <td class="{{ 'text-danger' if u.saldo < 0 else 'text-success' }}">
+                    {{ "%.2f"|format(u.saldo) }} €
+                </td>
+                
+                <td><small class="text-muted">{{ u.rfid_uid if u.rfid_uid else '-' }}</small></td>
+                
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ u.id }}">
+                        ✏ Bearbeiten
+                    </button>
+                    
+                    <form action="{{ url_for('admin_action') }}" method="POST" class="d-inline" onsubmit="return confirm('Wirklich löschen?');">
+                        <input type="hidden" name="aktion" value="delete_user">
+                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                        <button class="btn btn-sm btn-outline-danger">🗑</button>
+                    </form>
+                </td>
+            </tr>
+
+            <div class="modal fade" id="editModal{{ u.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Bearbeiten: {{ u.name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form action="{{ url_for('admin_action') }}" method="POST">
+                                <input type="hidden" name="aktion" value="edit_user">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                
+                                <div class="mb-3">
+                                    <label>Name</label>
+                                    <input type="text" name="name" class="form-control" value="{{ u.name }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label>RFID UID</label>
+                                    <input type="text" name="rfid" class="form-control" value="{{ u.rfid_uid if u.rfid_uid else '' }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label>Saldo (Manuelle Korrektur)</label>
+                                    <input type="number" step="0.01" name="saldo" class="form-control" value="{{ u.saldo }}">
+                                    <small class="text-danger">Achtung: Manuelle Änderung verfälscht die Transaktions-Historie!</small>
+                                </div>
+                                
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                                    <button type="submit" class="btn btn-primary">Speichern</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <hr>
+    
+    <div class="card p-3 bg-light">
+        <h5>➕ Neuen Nutzer anlegen</h5>
+        <form action="{{ url_for('admin_action') }}" method="POST" class="row g-2 align-items-center">
+            <input type="hidden" name="aktion" value="new_user">
+            <div class="col-md-3">
+                <input type="text" name="name" placeholder="Name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <input type="password" name="password" placeholder="Passwort" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="rfid" placeholder="RFID ID (optional)" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-success w-100">Anlegen</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
