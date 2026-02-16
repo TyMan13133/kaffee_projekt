@@ -16,6 +16,15 @@ class KaffeeSystem:
         master.geometry("480x320")
         # master.attributes('-fullscreen', True) 
 
+# 1. Macht das Fenster zum Vollbild
+        root.attributes('-fullscreen', True)
+
+# 2. Notausgang: Wenn du "ESC" auf einer angeschlossenen Tastatur drückst, schließt es sich
+        def beenden(event=None):
+            root.destroy()
+        root.bind("<Escape>", beenden)
+
+
         # Variablen
         self.current_user = None 
         self.running = True
