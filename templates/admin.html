@@ -163,14 +163,16 @@
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ u.id }}">
                         ✏ Bearbeiten
                     </button>
-                    
+                   
+                    {% if u.name != "Adminestrator" and u.name != "Administrator" %}
                     <form action="{{ url_for('admin_action') }}" method="POST" class="d-inline" onsubmit="return confirm('Wirklich löschen?');">
                         <input type="hidden" name="aktion" value="delete_user">
                         <input type="hidden" name="user_id" value="{{ u.id }}">
                         <button class="btn btn-sm btn-outline-danger">🗑</button>
                     </form>
-                </td>
-            </tr>
+                    {% else %}
+                    <span class="d-inline-block" style="width: 32px;"></span>
+                    {% endif %}
 
             <div class="modal fade" id="editModal{{ u.id }}" tabindex="-1">
                 <div class="modal-dialog">
