@@ -17,6 +17,14 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
+    # --- NEU: 0. Systemeinstellungen ---
+    c.execute('''CREATE TABLE settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                )''')
+    c.execute("INSERT INTO settings (key, value) VALUES ('gramm_pro_tasse', '12')")
+    c.execute("INSERT INTO settings (key, value) VALUES ('reset_datum', '2000-01-01 00:00:00')")
+
     # 1. User Tabelle (Mit UNIQUE constraint für den Namen!)
     c.execute('''CREATE TABLE users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,7 +35,7 @@ def init_db():
                     saldo REAL DEFAULT 0.0
                 )''')
     
-    # 2. Transaktionen (Kauf, Einzahlung, Bohnen)
+    # 2. Transaktionen (Kauf, Einzahlung, Auszahlung, Bohnen, Sonstiges)
     c.execute('''CREATE TABLE transaktionen (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER,
@@ -48,13 +56,8 @@ def init_db():
                     zeitstempel DATETIME DEFAULT CURRENT_TIMESTAMP
                 )''')
 
-    # 4. (Optional) Buchungen Tabelle für Kompatibilität mit altem Code, falls nötig
-    # Aber eigentlich nutzen wir jetzt 'transaktionen'. Ich lasse sie weg, um Verwirrung zu vermeiden.
-
     # --- ADMIN USER ERSTELLEN ---
-    # Passwort ist 'admin123'
     admin_pw = generate_password_hash("admin123")
-    
     try:
         c.execute("INSERT INTO users (name, rfid_uid, password_hash, is_admin, saldo) VALUES (?, ?, ?, ?, ?)", 
                   ("Administrator", "000000", admin_pw, 1, 0.0))
@@ -62,7 +65,7 @@ def init_db():
     except Exception as e:
         print(f"Fehler beim Admin-Erstellen: {e}")
 
-    # --- TEST USER ERSTELLEN (Optional, zum Testen) ---
+    # --- TEST USER ERSTELLEN ---
     user_pw = generate_password_hash("user123")
     c.execute("INSERT INTO users (name, rfid_uid, password_hash, is_admin, saldo) VALUES (?, ?, ?, ?, ?)", 
               ("Max Tester", "123456", user_pw, 0, 5.00))

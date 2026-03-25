@@ -5,37 +5,58 @@ from smartcard.util import toHexString
 import threading
 import time
 import requests
+import socket
 
 # --- KONFIGURATION ---
 SERVER_URL = "http://localhost:5000"
+
+def get_ip_address():
+    """Ermittelt die lokale IP-Adresse im Netzwerk."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1 (Offline)"
 
 class KaffeeSystem:
     def __init__(self, master):
         self.master = master
         master.title("Kaffee System")
         master.geometry("480x320")
-        # master.attributes('-fullscreen', True) 
+        
+        # 1. Vollbild aktivieren
+        master.attributes('-fullscreen', True)
+        master.configure(bg="#2c3e50") # Hintergrundfarbe für das Hauptfenster
 
-# 1. Macht das Fenster zum Vollbild
-        root.attributes('-fullscreen', True)
-
-# 2. Notausgang: Wenn du "ESC" auf einer angeschlossenen Tastatur drückst, schließt es sich
+        # 2. Notausgang (Beenden mit ESC)
         def beenden(event=None):
-            root.destroy()
-        root.bind("<Escape>", beenden)
-
+            master.destroy()
+        master.bind("<Escape>", beenden)
 
         # Variablen
         self.current_user = None 
         self.running = True
         self.rfid_cooldown = False
-        
-        # ÄNDERUNG PUNKT 4: Variable für den Logout-Timer Job
         self.timeout_job = None
 
-        # --- LAYOUT ---
-        self.frame_start = tk.Frame(master, bg="#2c3e50")
-        self.frame_auswahl = tk.Frame(master, bg="#ecf0f1")
+        # --- NEU: DAUERHAFTER FOOTER (Immer sichtbar) ---
+        # Dieser Balken wird ganz unten am Hauptfenster fixiert
+        aktuelle_ip = get_ip_address()
+        self.lbl_ip = tk.Label(master, text=f"Web-Dashboard: http://{aktuelle_ip}:5000", 
+                               font=("Arial", 12, "bold"), fg="white", bg="#34495e", pady=6)
+        self.lbl_ip.pack(side="bottom", fill="x") # 'bottom' pinnt es fest, 'fill="x"' macht es so breit wie den Bildschirm
+
+        # --- CONTAINER FÜR DEN WECHSELNDEN INHALT ---
+        # Der Container füllt den restlichen Platz über dem Footer aus
+        self.container = tk.Frame(master, bg="#2c3e50")
+        self.container.pack(side="top", fill="both", expand=True)
+
+        # --- LAYOUTS (Werden nun im Container platziert statt direkt im Master) ---
+        self.frame_start = tk.Frame(self.container, bg="#2c3e50")
+        self.frame_auswahl = tk.Frame(self.container, bg="#ecf0f1")
 
         # 1. STARTSEITE
         self.lbl_start = tk.Label(self.frame_start, text="Bitte Chip\nvorhalten...", 
@@ -52,18 +73,19 @@ class KaffeeSystem:
         self.lbl_info.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
         # Buttons
-        self.btn_schwarz = tk.Button(self.frame_auswahl, text="Kaffee\nSchwarz\n(0.40€)", bg="#6f4e37", fg="white",
-                                     font=("Arial", 16, "bold"), command=lambda: self.buche_produkt("Kaffee Schwarz", 0.40))
+        self.btn_schwarz = tk.Button(self.frame_auswahl, text="Kaffee\nmit Koffein\n(0.40€)", bg="#6f4e37", fg="white",
+                                     font=("Arial", 16, "bold"), command=lambda: self.buche_produkt("Kaffee mit Koffein", 0.40))
         self.btn_schwarz.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
-        self.btn_decaf = tk.Button(self.frame_auswahl, text="Kaffee\nDecaf\n(0.40€)", bg="#16a085", fg="white",
-                                   font=("Arial", 16, "bold"), command=lambda: self.buche_produkt("Kaffee Decaf", 0.40))
+        self.btn_decaf = tk.Button(self.frame_auswahl, text="Kaffee\nEntkoffeiniert\n(0.40€)", bg="#16a085", fg="white",
+                                   font=("Arial", 16, "bold"), command=lambda: self.buche_produkt("Kaffee Entkoffeiniert", 0.40))
         self.btn_decaf.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
         
         self.btn_logout = tk.Button(self.frame_auswahl, text="Abbrechen", bg="#c0392b", fg="white",
                                     font=("Arial", 14), command=self.logout)
         self.btn_logout.grid(row=2, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
 
+        # Startbildschirm initial anzeigen
         self.frame_start.pack(fill="both", expand=True)
 
         # RFID Thread starten
@@ -124,7 +146,6 @@ class KaffeeSystem:
         farbe = "#aaffaa" if saldo >= 0 else "#ffaaaa"
         self.lbl_info.config(text=f"Hallo {self.current_user['name']}\nSaldo: {saldo:.2f} €", bg=farbe)
         
-        # ÄNDERUNG PUNKT 4: Timeout starten (20 Sekunden = 20000ms)
         if self.timeout_job:
             self.master.after_cancel(self.timeout_job)
         self.timeout_job = self.master.after(20000, self.logout)
@@ -132,7 +153,6 @@ class KaffeeSystem:
     def buche_produkt(self, produkt_name, preis):
         if not self.current_user: return
         
-        # ÄNDERUNG PUNKT 4: Timeout abbrechen, da Interaktion erfolgt ist
         if self.timeout_job:
             self.master.after_cancel(self.timeout_job)
             self.timeout_job = None
@@ -150,7 +170,6 @@ class KaffeeSystem:
             if result['status'] == 'success':
                 new_saldo = result['new_saldo']
                 self.lbl_info.config(text=f"✅ {produkt_name}\nRest: {new_saldo:.2f} €", bg="#ffffaa")
-                # Logout nach 2 Sekunden (wie vorher)
                 self.master.after(2000, self.logout)
                 
         except Exception as e:
@@ -158,7 +177,6 @@ class KaffeeSystem:
             self.master.after(2000, self.logout)
 
     def logout(self):
-        # ÄNDERUNG PUNKT 4: Timer sauber aufräumen
         if self.timeout_job:
             self.master.after_cancel(self.timeout_job)
             self.timeout_job = None

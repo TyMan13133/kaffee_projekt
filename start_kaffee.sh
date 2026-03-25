@@ -1,10 +1,10 @@
 #!/bin/bash
-
+sleep 5
 # 1. Gehe in den Ordner, wo deine Python-Dateien liegen
 cd /home/pi/kaffee_projekt
-
-# 2. Starte die app.py im Hintergrund (das & am Ende ist extrem wichtig!)
-python3 app.py &
-
+#Bildschirmschoner deaktivereen
+xset s noblank
+xset s off
+xset -dpms
 # 3. Starte danach sofort die grafische Oberfläche
 python3 kaffee_system_main.py
